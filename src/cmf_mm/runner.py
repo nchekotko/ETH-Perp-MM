@@ -21,6 +21,7 @@ from .data.splits import SplitBoundaries, chronological_split
 from .engine.event_loop import BacktestConfig as EngineConfig
 from .engine.event_loop import BacktestResult, run_backtest
 from .strategy.as_asymmetric import ASAsymmetricParams, ASAsymmetricStrategy
+from .strategy.as_funding import ASFundingParams, ASFundingStrategy
 from .strategy.as_microprice import ASMicropriceStrategy
 from .strategy.avellaneda_stoikov import ASParams, AvellanedaStoikovStrategy
 from .strategy.base import Strategy
@@ -63,6 +64,30 @@ def _build_strategy(cfg: StrategyConfig, sigma: float, k: float, T_horizon_us: i
             alpha=cfg.alpha or 0.0,
         )
         return ASAsymmetricStrategy(ap)
+    if cfg.name == "as_funding":
+        fp = ASFundingParams(
+            gamma=p.gamma,
+            sigma=p.sigma,
+            k=p.k,
+            T_horizon_us=p.T_horizon_us,
+            order_size=p.order_size,
+            max_inventory=p.max_inventory,
+            quote_refresh_min_interval_us=p.quote_refresh_min_interval_us,
+            funding_kappa=cfg.funding_kappa,
+            alpha=cfg.alpha or 0.0,
+            tick_size=cfg.tick_size,
+            momentum_beta=cfg.momentum_beta,
+            momentum_halflife_s=cfg.momentum_halflife_s,
+            momentum_gate=cfg.momentum_gate,
+            momentum_defensive=cfg.momentum_defensive,
+            imbalance_defensive=cfg.imbalance_defensive,
+            imb_pull_threshold=cfg.imb_pull_threshold,
+            fill_cooldown_s=cfg.fill_cooldown_s,
+            sweep_gate_k=cfg.sweep_gate_k,
+            sweep_halflife_s=cfg.sweep_halflife_s,
+            sweep_cooldown_s=cfg.sweep_cooldown_s,
+        )
+        return ASFundingStrategy(fp)
     raise ValueError(f"unknown strategy: {cfg.name}")
 
 

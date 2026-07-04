@@ -25,18 +25,32 @@ class TradeEvent:
 
 @dataclass(frozen=True, slots=True)
 class LOBEvent:
-    """Top-of-book snapshot. Higher levels are ignored by the engine but the
-    raw L2 levels remain available in the parquet file for downstream analysis
-    (e.g. queue-position extensions in the roadmap)."""
+    """Top-of-book snapshot plus aggregate depth. The engine matches against
+    the touch only; the depth sums over the top 5/10 levels per side feed
+    depth-imbalance signals in strategies. 0.0 ⇒ depth not available (old
+    parquet or synthetic test events)."""
 
     ts: int
     bid_px: float
     bid_sz: float
     ask_px: float
     ask_sz: float
+    bid_d5: float = 0.0
+    ask_d5: float = 0.0
+    bid_d10: float = 0.0
+    ask_d10: float = 0.0
 
 
-Event = TradeEvent | LOBEvent
+@dataclass(frozen=True, slots=True)
+class FundingEvent:
+    """Funding-rate observation (~every 20 s). ``rate`` is quoted per funding
+    interval (8h by convention); positive ⇒ longs pay shorts."""
+
+    ts: int
+    rate: float
+
+
+Event = TradeEvent | LOBEvent | FundingEvent
 
 
 @dataclass(slots=True)
@@ -46,6 +60,15 @@ class Order:
     price: float
     size: float
     submit_ts: int
+    # Queue-position model (fill_model="queue"): displayed size ahead of us at
+    # our price level. None ⇒ unknown (order resting deeper than the touch);
+    # set from the displayed size when our level first becomes the touch.
+    queue_ahead: float | None = None
+    filled: float = 0.0
+
+    @property
+    def remaining(self) -> float:
+        return self.size - self.filled
 
 
 @dataclass(frozen=True, slots=True)

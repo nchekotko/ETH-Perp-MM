@@ -15,6 +15,7 @@ class StrategyState:
     cash: float = 0.0
     last_quote_ts: int = 0
     last_actions: list[QuoteAction] = field(default_factory=list)
+    funding_rate: float = 0.0  # latest observed rate (per funding interval)
 
 
 class Strategy(ABC):
