@@ -1,0 +1,39 @@
+name: takehome_funding_momentum
+
+# Final selected configuration (selection protocol: in-sample day-1 PnL only;
+# days 2-3 remain walk-forward validation — see REPORT_TAKEHOME.md §3.5).
+
+data:
+  trades_parquet: data/takehome/trades.parquet
+  lob_parquet: data/takehome/lob.parquet
+  fundings_parquet: data/takehome/fundings.parquet
+  train_ratio: 0.5   # unused by the walk-forward runner; kept for schema validity
+
+strategy:
+  name: as_funding
+  gamma: 50.0
+  order_size: 0.5
+  max_inventory: 3.0
+  quote_refresh_min_interval_us: 100000   # 100 ms
+  funding_kappa: 0.125                     # ≈ 1h expected holding / 8h funding period
+  alpha: 0.2
+  tick_size: 0.1
+  momentum_beta: 30.0                      # drift projection horizon, seconds
+  momentum_halflife_s: 60.0                # drift EWMA halflife
+  momentum_gate: 0.0
+  momentum_defensive: true                 # skew only widens the adverse side
+
+calibration:
+  sigma_sample_stride: 5
+  intensity_n_bins: 20
+  T_horizon_seconds: 0    # infinite-horizon AS limit
+
+execution:
+  partial_fills: true
+  fee_bps: 0.0
+  fill_model: queue
+  funding_period_hours: 8.0
+
+output:
+  results_dir: results/takehome_momentum
+  sample_every_n_events: 200

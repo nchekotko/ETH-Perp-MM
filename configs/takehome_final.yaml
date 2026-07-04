@@ -1,0 +1,43 @@
+name: takehome_funding_signal
+
+# Final selected configuration of the whole study (selection protocol:
+# in-sample day-1 PnL argmax across all ~110 runs; days 2-3 untouched
+# walk-forward validation — see REPORT_TAKEHOME.md §3.5-3.6).
+# Day 1: +5.5 USD, OOS days 2-3: +0.5 USD, total +6.0 USD (queue fill model).
+
+data:
+  trades_parquet: data/takehome/trades.parquet
+  lob_parquet: data/takehome/lob.parquet
+  fundings_parquet: data/takehome/fundings.parquet
+  train_ratio: 0.5   # unused by the walk-forward runner; kept for schema validity
+
+strategy:
+  name: as_funding
+  gamma: 50.0
+  order_size: 0.5
+  max_inventory: 3.0
+  quote_refresh_min_interval_us: 100000   # 100 ms
+  funding_kappa: 0.125                     # frozen inventory hygiene (immaterial in PnL)
+  alpha: 0.8                               # book-imbalance reservation skew (the alpha)
+  tick_size: 0.1
+  momentum_beta: 30.0                      # defensive drift skew (adverse side only)
+  momentum_halflife_s: 60.0
+  momentum_defensive: true
+  imb_pull_threshold: 0.8                  # pull the quote imbalance says will be swept
+  fill_cooldown_s: 0.0
+  sweep_gate_k: 0.0                        # rejected by day-1 selection (see report)
+
+calibration:
+  sigma_sample_stride: 5
+  intensity_n_bins: 20
+  T_horizon_seconds: 0    # infinite-horizon AS limit
+
+execution:
+  partial_fills: true
+  fee_bps: 0.0
+  fill_model: queue
+  funding_period_hours: 8.0
+
+output:
+  results_dir: results/takehome_final
+  sample_every_n_events: 200
